@@ -1,0 +1,20 @@
+[project]
+name = "httptrading"
+version = "1.0.0"
+description = "统一交易通道的接口服务"
+authors = [
+    {name = "songwei", email = "github@songwei.name"},
+]
+dependencies = ["aiohttp>=3.12.6", "humanize>=4.12.3", "tomlkit>=0.13.2"]
+requires-python = ">=3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.pdm]
+distribution = true
+packages = ["httptrading"]
