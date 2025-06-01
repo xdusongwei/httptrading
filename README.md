@@ -490,8 +490,8 @@ from httptrading import *
 from httptrading.model import *
 
 
-@broker_register('myApi', 'XX证券')
-class MyTradingApi(BaseBroker):
+@broker_register('myBroker', 'XX证券')
+class MyBroker(BaseBroker):
     # 根据需要的功能实现接口
     # 如果 sdk 提供的方式会阻塞 eventloop, 需要使用 self.call_sync 方法传入阻塞方法
     async def place_order(

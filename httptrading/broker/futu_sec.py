@@ -413,7 +413,7 @@ class Futu(SecuritiesBroker):
         reason = ''
         order_status: str = futu_order['order_status']
         if order_status in bad_endings:
-            reason = futu_order['order_status']
+            reason = order_status
         is_canceled = order_status in canceled_endings
         is_pending_cancel = order_status in pending_cancel_sets
         return Order(
