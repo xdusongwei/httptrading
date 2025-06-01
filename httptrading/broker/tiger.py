@@ -318,19 +318,36 @@ class Tiger(SecuritiesBroker):
         ))
 
     def _order(self, order_id: str) -> Order:
+        # 订单状态定义见
+        # https://quant.itigerup.com/openapi/zh/python/appendix2/overview.html#%E8%AE%A2%E5%8D%95%E7%8A%B6%E6%80%81
+        # 注意文档比 SDK 定义要少
         from tigeropen.trade.domain.order import Order as TigerOrder, OrderStatus
+
+        canceled_endings = {OrderStatus.CANCELLED, }
+        bad_endings = {
+            OrderStatus.REJECTED,
+            OrderStatus.EXPIRED,
+        }
+        pending_cancel_sets = {OrderStatus.PENDING_CANCEL, }
+
         with self._order_bucket:
             tiger_order: TigerOrder = self._trade_client.get_order(id=int(order_id))
         if tiger_order is None:
             raise Exception(f'查询不到订单{order_id}')
+
+        order_status = tiger_order.status
+        reason = tiger_order.reason or (order_status.name if order_status in bad_endings else None)
+        is_canceled = order_status in canceled_endings
+        is_pending_cancel = order_status in pending_cancel_sets
         return Order(
             order_id=order_id,
             currency=tiger_order.contract.currency,
             qty=tiger_order.quantity or 0,
             filled_qty=tiger_order.filled or 0,
             avg_price=tiger_order.avg_fill_price or 0.0,
-            error_reason=tiger_order.reason,
-            is_canceled=tiger_order.status == OrderStatus.CANCELLED,
+            error_reason=reason,
+            is_canceled=is_canceled,
+            is_pending_cancel=is_pending_cancel,
         )
 
     async def order(self, order_id: str) -> Order:

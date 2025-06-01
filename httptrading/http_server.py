@@ -95,6 +95,7 @@ class HttpTradingView(web.View):
                 'isCanceled': obj.is_canceled,
                 'isFilled': obj.is_filled,
                 'isCompleted': obj.is_completed,
+                'isCancelable': obj.is_cancelable,
             }
         raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 

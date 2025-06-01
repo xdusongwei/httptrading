@@ -393,24 +393,25 @@ GET /httptrading/api/{instanceId}/order/state?orderId={订单号}
 
 ```json lines
 {
-	"type": "apiResponse",
-	"instanceId": "ggUqPZbSKuQ7Ewsk",
-	"broker": "futu",
-	"brokerDisplay": "富途证券",
-	"time": "2025-05-28T05:59:29.984021+00:00",
-	"ex": null,
-	"order": {
-		"type": "order",
-		"orderId": "6278888",
-		"currency": "USD",
-		"qty": 12, // 订单数量
-		"filledQty": 0, // 已成交数量
-		"avgPrice": 0, // 成交价
-		"errorReason": "", // 如果订单异常, 这里记录错误信息
-		"isCanceled": false, // 是否已撤销
-		"isFilled": false, // 是否全部成交
-		"isCompleted": false // 全部成交 或者 有异常 或者 已撤销, 亦等价于不可撤的标志
-	}
+  "type": "apiResponse",
+  "instanceId": "ggUqPZbSKuQ7Ewsk",
+  "broker": "futu",
+  "brokerDisplay": "富途证券",
+  "time": "2025-05-28T05:59:29.984021+00:00",
+  "ex": null,
+  "order": {
+    "type": "order",
+    "orderId": "6278888",
+    "currency": "USD",
+    "qty": 12, // 订单数量
+    "filledQty": 0, // 已成交数量
+    "avgPrice": 0, // 成交价
+    "errorReason": "", // 如果订单异常, 这里记录错误信息
+    "isCanceled": false, // 是否已撤销
+    "isFilled": false, // 是否全部成交
+    "isCompleted": false, // 全部成交 或者 有异常 或者 已撤销
+    "isCancelable": true // 是否可撤的标志
+  }
 }
 ```
 

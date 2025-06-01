@@ -290,6 +290,10 @@ class InteractiveBrokers(SecuritiesBroker):
     async def _order(self, order_id: str) -> Order:
         import ib_insync
 
+        canceled_endings = {ib_insync.OrderStatus.Cancelled, ib_insync.OrderStatus.ApiCancelled, }
+        bad_endings = {ib_insync.OrderStatus.Inactive, }
+        pending_cancel_sets = {ib_insync.OrderStatus.PendingCancel, }
+
         def _total_fills(trade) -> int:
             return int(trade.filled())
 
@@ -314,24 +318,21 @@ class InteractiveBrokers(SecuritiesBroker):
             assert qty >= filled_qty
             avg_fill_price = _avg_price(ib_trade)
             reason = ''
-            if ib_trade.orderStatus.status == ib_insync.OrderStatus.Inactive:
-                reason = 'Inactive'
-
-            cancel_status = {
-                ib_insync.OrderStatus.PendingCancel,
-                ib_insync.OrderStatus.Cancelled,
-                ib_insync.OrderStatus.ApiCancelled,
-            }
-            is_cancelled = ib_trade.orderStatus.status in cancel_status
-            return Order(
+            if ib_trade.orderStatus.status in bad_endings:
+                reason = ib_trade.orderStatus.status
+            is_canceled = ib_trade.orderStatus.status in canceled_endings
+            is_pending_cancel = ib_trade.orderStatus.status in pending_cancel_sets
+            order = Order(
                 order_id=order_id,
                 currency=ib_trade.contract.currency,
                 qty=qty,
                 filled_qty=filled_qty,
                 avg_price=avg_fill_price,
                 error_reason=reason,
-                is_canceled=is_cancelled,
+                is_canceled=is_canceled,
+                is_pending_cancel=is_pending_cancel,
             )
+            return order
         raise Exception(f'查询不到订单{order_id}')
 
     async def order(self, order_id: str) -> Order:

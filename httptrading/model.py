@@ -119,6 +119,9 @@ class Order:
     avg_price: float = field(default=0.0)
     error_reason: str = field(default='')
     is_canceled: bool = field(default=False)
+    # 如果交易通道存在"待取消""已提交取消"的订单状态,
+    # 这里需要改变默认值为 True
+    is_pending_cancel: bool = field(default=False)
 
     @property
     def is_filled(self) -> bool:
@@ -137,6 +140,11 @@ class Order:
         elif self.error_reason:
             is_completed = True
         return is_completed
+
+    @property
+    def is_cancelable(self) -> bool:
+        is_completed = self.is_completed
+        return not is_completed and not self.is_pending_cancel
 
 
 @dataclass(frozen=True)

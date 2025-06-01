@@ -367,8 +367,37 @@ class Futu(SecuritiesBroker):
 
     def _order(self, order_id: str) -> Order:
         from futu import RET_OK, OrderStatus
-        error_set = {OrderStatus.FAILED, OrderStatus.DISABLED, OrderStatus.DELETED, }
-        cancel_set = {OrderStatus.CANCELLED_PART, OrderStatus.CANCELLED_ALL, }
+
+        """
+        富途证券的状态定义
+        NONE = "N/A"                                # 未知状态
+        UNSUBMITTED = "UNSUBMITTED"                 # 未提交
+        WAITING_SUBMIT = "WAITING_SUBMIT"           # 等待提交
+        SUBMITTING = "SUBMITTING"                   # 提交中
+        SUBMIT_FAILED = "SUBMIT_FAILED"             # 提交失败，下单失败
+        TIMEOUT = "TIMEOUT"                         # 处理超时，结果未知
+        SUBMITTED = "SUBMITTED"                     # 已提交，等待成交
+        FILLED_PART = "FILLED_PART"                 # 部分成交
+        FILLED_ALL = "FILLED_ALL"                   # 全部已成
+        CANCELLING_PART = "CANCELLING_PART"         # 正在撤单_部分(部分已成交，正在撤销剩余部分)
+        CANCELLING_ALL = "CANCELLING_ALL"           # 正在撤单_全部
+        CANCELLED_PART = "CANCELLED_PART"           # 部分成交，剩余部分已撤单
+        CANCELLED_ALL = "CANCELLED_ALL"             # 全部已撤单，无成交
+        FAILED = "FAILED"                           # 下单失败，服务拒绝
+        DISABLED = "DISABLED"                       # 已失效
+        DELETED = "DELETED"                         # 已删除，无成交的订单才能删除
+        FILL_CANCELLED = "FILL_CANCELLED"           # 成交被撤销，一般遇不到，意思是已经成交的订单被回滚撤销，成交无效变为废单
+        """
+        canceled_endings = {OrderStatus.CANCELLED_ALL, OrderStatus.CANCELLED_PART, }
+        bad_endings = {
+            OrderStatus.SUBMIT_FAILED,
+            OrderStatus.FAILED,
+            OrderStatus.DISABLED,
+            OrderStatus.DELETED,
+            OrderStatus.FILL_CANCELLED, # 不清楚对于成交数量有何影响.
+        }
+        pending_cancel_sets = {OrderStatus.CANCELLING_PART, OrderStatus.CANCELLING_ALL, }
+
         with self._refresh_order_bucket:
             ret, data = self._trade_client.order_list_query(
                 order_id=order_id,
@@ -382,8 +411,11 @@ class Futu(SecuritiesBroker):
             raise Exception(f'找不到订单(未完成), 订单: {order_id}')
         futu_order = orders[0]
         reason = ''
-        if futu_order['order_status'] in error_set:
+        order_status: str = futu_order['order_status']
+        if order_status in bad_endings:
             reason = futu_order['order_status']
+        is_canceled = order_status in canceled_endings
+        is_pending_cancel = order_status in pending_cancel_sets
         return Order(
             order_id=order_id,
             currency=futu_order['currency'],
@@ -391,7 +423,8 @@ class Futu(SecuritiesBroker):
             filled_qty=int(futu_order['dealt_qty']),
             avg_price=futu_order['dealt_avg_price'] or 0.0,
             error_reason=reason,
-            is_canceled=futu_order['order_status'] in cancel_set,
+            is_canceled=is_canceled,
+            is_pending_cancel=is_pending_cancel,
         )
 
     async def order(self, order_id: str) -> Order:

@@ -344,17 +344,26 @@ class LongBridge(SecuritiesBroker):
         ))
 
     def _order(self, order_id: str) -> Order:
+        # 订单状态定义见
+        # https://open.longportapp.com/zh-CN/docs/trade/trade-definition#orderstatus
         from longport.openapi import OrderStatus
+
+        canceled_endings = {OrderStatus.Canceled, }
+        bad_endings = {
+            OrderStatus.Rejected,
+            OrderStatus.Expired,
+            OrderStatus.PartialWithdrawal,
+        }
+        pending_cancel_sets = {OrderStatus.PendingCancel, }
+
         with self._assets_bucket:
             self._try_refresh()
             resp = self._trade_client.order_detail(order_id=order_id)
         reason = ''
-        if resp.status == OrderStatus.Rejected:
-            reason = '已拒绝'
-        if resp.status == OrderStatus.Expired:
-            reason = '已过期'
-        if resp.status == OrderStatus.PartialWithdrawal:
-            reason = '部分撤单'
+        if resp.status in bad_endings:
+            reason = str(resp.status)
+        is_canceled = resp.status in canceled_endings
+        is_pending_cancel = resp.status in pending_cancel_sets
         return Order(
             order_id=order_id,
             currency=resp.currency,
@@ -362,7 +371,8 @@ class LongBridge(SecuritiesBroker):
             filled_qty=int(resp.executed_quantity),
             avg_price=float(resp.executed_price) if resp.executed_price else 0.0,
             error_reason=reason,
-            is_canceled=resp.status == OrderStatus.Canceled,
+            is_canceled=is_canceled,
+            is_pending_cancel=is_pending_cancel,
         )
 
     async def order(self, order_id: str) -> Order:
