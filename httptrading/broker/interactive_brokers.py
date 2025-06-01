@@ -5,7 +5,6 @@ https://ib-insync.readthedocs.io/readme.html
 import re
 import asyncio
 from typing import Any
-from collections import defaultdict
 from httptrading.tool.leaky_bucket import *
 from httptrading.tool.time import *
 from httptrading.broker.base import *
@@ -318,7 +317,11 @@ class InteractiveBrokers(SecuritiesBroker):
             if ib_trade.orderStatus.status == ib_insync.OrderStatus.Inactive:
                 reason = 'Inactive'
 
-            cancel_status = {ib_insync.OrderStatus.Cancelled, ib_insync.OrderStatus.ApiCancelled, }
+            cancel_status = {
+                ib_insync.OrderStatus.PendingCancel,
+                ib_insync.OrderStatus.Cancelled,
+                ib_insync.OrderStatus.ApiCancelled,
+            }
             is_cancelled = ib_trade.orderStatus.status in cancel_status
             return Order(
                 order_id=order_id,

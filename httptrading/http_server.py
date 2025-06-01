@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, UTC
+from typing import Callable
 from aiohttp import web
 from httptrading.broker.base import *
 from httptrading.model import *
@@ -255,29 +256,48 @@ async def exception_middleware(request: web.Request, handler):
         return HttpTradingView.response_api(broker=broker, ex=ex)
 
 
+def std_api_factory() -> list[web.RouteDef]:
+    apis = [
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/place', PlaceOrderView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/state', OrderStateView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/cancel', CancelOrderView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/cash/state', CashView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/position/state', PositionView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/ping/state', PlugInView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/market/state', MarketStatusView),
+        web.view(r'/httptrading/api/{instance_id:\w{16,32}}/market/quote', QuoteView),
+    ]
+    return apis
+
 def run(
         host: str,
         port: int,
         brokers: list[BaseBroker],
+        std_apis: Callable[[], list[web.RouteDef]] = None,
+        extend_apis: list[web.RouteDef] = None,
+        **kwargs
 ) -> None:
+    """
+    @param host: 监听地址
+    @param port: 监听端口
+    @param brokers: 需要控制的交易通道对象列表
+    @param std_apis: 如果需要替换默认提供的接口, 这里提供工厂函数的回调
+    @param extend_apis: 如果需要增加自定义接口, 这里传入 RouteDef 列表
+    @param kwargs: 其他的参数将传给 aiohttp.web.run_app 函数
+    """
     app = web.Application(
         middlewares=[
             auth_middleware,
             exception_middleware,
         ],
     )
-    app.add_routes(
-        [
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/place', PlaceOrderView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/state', OrderStateView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/order/cancel', CancelOrderView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/cash/state', CashView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/position/state', PositionView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/ping/state', PlugInView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/market/state', MarketStatusView),
-            web.view(r'/httptrading/api/{instance_id:\w{16,32}}/market/quote', QuoteView),
-        ]
-    )
+
+    apis = (std_api_factory if std_apis is None else std_apis)()
+
+    if extend_apis:
+        apis.extend(extend_apis)
+
+    app.add_routes(apis)
 
     async def _on_startup(app):
         HttpTradingView.set_brokers(brokers)
@@ -294,4 +314,12 @@ def run(
         app,
         host=host,
         port=port,
+        **kwargs
     )
+
+
+__all__ = [
+    'run',
+    'std_api_factory',
+    'HttpTradingView',
+]
