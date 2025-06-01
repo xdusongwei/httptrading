@@ -142,7 +142,7 @@ class Tiger(SecuritiesBroker):
     async def cash(self) -> Cash:
         return await self.call_sync(lambda: self._cash())
 
-    def _market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    def _market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         from tigeropen.common.consts import Market
         from tigeropen.quote.domain.market_status import MarketStatus as TigerMarketStatus
         client = self._quote_client
@@ -172,10 +172,10 @@ class Tiger(SecuritiesBroker):
                 unified_status=unified_status,
             )
         return {
-            TradeType.Securities.name.lower(): sec_result,
+            TradeType.Securities: sec_result,
         }
 
-    async def market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    async def market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         return await self.call_sync(lambda: self._market_status())
 
     def _quote(self, contract: Contract):

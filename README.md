@@ -1,5 +1,9 @@
 # httptrading
 
+```shell
+pip install httptrading
+```
+
 项目的用途
 --------
 
@@ -207,34 +211,35 @@ GET /httptrading/api/{instanceId}/market/state
 
 ```json lines
 {
-	"type": "apiResponse",
-	"instanceId": "ggUqPZbSKuQ7Ewsk",
-	"broker": "futu",
-	"brokerDisplay": "富途证券",
-	"time": "2025-05-28T05:33:42.543109+00:00",
-	"ex": null,
-	"marketStatus": {
-		"securities": { // 证券类市场状态, 以 region 为键的结构
-			"US": {
-				"type": "marketStatus",
-				"region": "US",
-				"originStatus": "AFTER_HOURS_END", // 交易通道原始市场状态
-				"unifiedStatus": "CLOSED" // 统一映射的定义
-			},
-			"CN": {
-				"type": "marketStatus",
-				"region": "CN",
-				"originStatus": "AFTERNOON",
-				"unifiedStatus": "RTH"
-			},
-			"HK": {
-				"type": "marketStatus",
-				"region": "HK",
-				"originStatus": "AFTERNOON",
-				"unifiedStatus": "RTH"
-			}
-		}
-	}
+    "type": "apiResponse",
+    "instanceId": "ggUqPZbSKuQ7Ewsk",
+    "broker": "futu",
+    "brokerDisplay": "富途证券",
+    "time": "2025-05-28T05:33:42.543109+00:00",
+    "ex": null,
+    "marketStatus": {
+        "type": "marketStatusMap",
+        "securities": { // 证券类市场状态, 以 region 为键的结构
+            "US": {
+                "type": "marketStatus",
+                "region": "US",
+                "originStatus": "AFTER_HOURS_END", // 交易通道原始市场状态
+                "unifiedStatus": "CLOSED" // 统一映射的定义
+            },
+            "CN": {
+                "type": "marketStatus",
+                "region": "CN",
+                "originStatus": "AFTERNOON",
+                "unifiedStatus": "RTH"
+            },
+            "HK": {
+                "type": "marketStatus",
+                "region": "HK",
+                "originStatus": "AFTERNOON",
+                "unifiedStatus": "RTH"
+            }
+        }
+    }
 }
 ```
 

@@ -166,7 +166,7 @@ class Futu(SecuritiesBroker):
     async def cash(self) -> Cash:
         return await self.call_sync(lambda : self._cash())
 
-    def _market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    def _market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         # 各个市场的状态定义见:
         # https://openapi.futunn.com/futu-api-doc/qa/quote.html#2090
         from futu import RET_OK
@@ -204,10 +204,10 @@ class Futu(SecuritiesBroker):
                 unified_status=unified_status,
             )
         return {
-            TradeType.Securities.name.lower(): sec_result,
+            TradeType.Securities: sec_result,
         }
 
-    async def market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    async def market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         return await self.call_sync(lambda : self._market_status())
 
     def _quote(self, contract: Contract):

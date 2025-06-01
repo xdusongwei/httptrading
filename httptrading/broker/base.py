@@ -81,7 +81,13 @@ class BaseBroker(ABC):
     async def quote(self, contract: Contract) -> Quote:
         raise NotImplementedError
 
-    async def market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    async def market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
+        """
+        报告交易通道提供的市场状态,
+        返回一个双层字典,
+        外层字典是以交易品种分类的结构, 比如 TradeType.Securities,
+        内层的字典是按国家代码区分的各个市场状态的结构, 比如 "US".
+        """
         raise NotImplementedError
 
 

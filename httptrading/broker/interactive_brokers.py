@@ -5,6 +5,7 @@ https://ib-insync.readthedocs.io/readme.html
 import re
 import asyncio
 from typing import Any
+from collections import defaultdict
 from httptrading.tool.leaky_bucket import *
 from httptrading.tool.time import *
 from httptrading.broker.base import *
@@ -74,13 +75,21 @@ class InteractiveBrokers(SecuritiesBroker):
         async with self._lock:
             if contract in self._ib_contracts:
                 return self._ib_contracts[contract]
-            print(f'{contract}未命中')
             currency = self.contract_to_currency(contract)
             ib_contract = ib_insync.Stock(contract.ticker, 'SMART', currency=currency)
             client = self._client
             client.qualifyContracts(*[ib_contract, ])
             self._ib_contracts[contract] = ib_contract
             return ib_contract
+
+    def _when_create_client(self, client):
+        import ib_insync
+        client: ib_insync.IB = client
+
+        def _order_status_changed(trade: ib_insync.Trade):
+            pass
+
+        client.orderStatusEvent += _order_status_changed
 
     async def _try_create_client(self):
         import ib_insync
@@ -101,6 +110,7 @@ class InteractiveBrokers(SecuritiesBroker):
                 ib = ib_socket
             else:
                 ib = ib_insync.IB()
+                self._when_create_client(ib)
             host = self.broker_args.get('host', '127.0.0.1')
             port = self.broker_args.get('port', 4000)
             client_id = self.broker_args.get('client_id', self._client_id)
@@ -222,13 +232,23 @@ class InteractiveBrokers(SecuritiesBroker):
                     case _:
                         raise Exception(f'不支持的订单类型: {order_type}')
 
+            evt = asyncio.Event()
+            def _status_evnet(_trade: ib_insync.Trade):
+                evt.set()
+
             ib_order = _map_order()
             ib_order.tif = _map_time_in_force()
             ib_order.outsideRth = _map_lifecycle()
             trade: ib_insync.Trade = client.placeOrder(ib_contract, ib_order)
-            await asyncio.sleep(2.0)
-            order_id = str(trade.order.permId)
+            trade.statusEvent += _status_evnet
+            try:
+                await asyncio.wait_for(evt.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                pass
+            finally:
+                order_id = str(trade.order.permId)
             assert order_id
+            order_id = str(trade.order.permId)
             return order_id
 
     async def place_order(

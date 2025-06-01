@@ -19,7 +19,7 @@ class HttpTradingView(web.View):
     def instance_id(self) -> str:
         return self.request.match_info.get('instance_id', '')
 
-    def current_broker(self):
+    def current_broker(self) -> BaseBroker:
         broker = getattr(self.request, '__current_broker__', None)
         if broker is None:
             raise web.HTTPNotFound()
@@ -212,6 +212,8 @@ class MarketStatusView(HttpTradingView):
     async def get(self):
         broker = self.current_broker()
         ms_dict = await broker.market_status()
+        ms_dict = {t.name.lower(): d for t, d in ms_dict.items()}
+        ms_dict['type'] = 'marketStatusMap'
         return self.response_api(broker, {
             'marketStatus': ms_dict,
         })
