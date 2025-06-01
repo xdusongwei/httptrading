@@ -524,6 +524,6 @@ class MyTradingApi(BaseBroker):
     async def quote(self, contract: Contract) -> Quote:
         raise NotImplementedError
 
-    async def market_status(self) -> dict[str, dict[str, MarketStatus]]:
+    async def market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         raise NotImplementedError
 ```
