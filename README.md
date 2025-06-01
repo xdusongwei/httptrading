@@ -527,3 +527,61 @@ class MyTradingApi(BaseBroker):
     async def market_status(self) -> dict[TradeType, dict[str, MarketStatus] | str]:
         raise NotImplementedError
 ```
+
+
+编写新接口
+--------
+
+```python
+import aiohttp.web
+import httptrading
+
+class MyApi(httptrading.HttpTradingView):
+    async def get(self):
+        broker = self.current_broker()
+        return self.response_api(
+            broker=broker,
+            args={
+                'method': 'GET',
+                'hello': 'world',  
+            },
+        )
+    
+    async def post(self):
+        body_d: dict = await self.request.json()
+        broker = self.current_broker()
+        return self.response_api(
+            broker=broker,
+            args={
+                'method': 'POST',
+                'hello': 'world',  
+                'body': body_d,
+            },
+        )
+
+httptrading.run(
+    host='127.0.0.1',
+    port=8080,
+    brokers=list(),
+    extend_apis=[aiohttp.web.view(r'/httptrading/api/{instance_id:\w{16,32}}/hello/world', MyApi), ],
+)
+```
+
+改变默认的接口
+-----------
+
+```python
+import httptrading
+
+def my_std_apis():
+    std_apis = httptrading.std_api_factory()
+    apis = [api for api in std_apis if 1 == 1]
+    return apis
+
+httptrading.run(
+    host='127.0.0.1',
+    port=8080,
+    brokers=list(),
+    std_apis=my_std_apis,
+)
+```

@@ -107,7 +107,7 @@ class HttpTradingView(web.View):
         return web.Response(text=cls.dumps(obj), content_type='application/json')
 
     @classmethod
-    def response_api(cls, broker: BaseBroker, args: dict = None, ex: Exception = None):
+    def response_api(cls, broker: BaseBroker = None, args: dict = None, ex: Exception = None):
         resp = {
             'type': 'apiResponse',
             'instanceId': broker.instance_id if broker else None,
