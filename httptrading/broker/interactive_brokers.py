@@ -86,7 +86,11 @@ class InteractiveBrokers(SecuritiesBroker):
         client: ib_insync.IB = client
 
         def _order_status_changed(trade: ib_insync.Trade):
-            pass
+            try:
+                order = self._build_order(trade)
+                self.dump_order(order)
+            except Exception as e:
+                print(f'[{self.__class__.__name__}]_order_status_changed: {e}\ntrade: {trade}')
 
         client.orderStatusEvent += _order_status_changed
 
@@ -287,9 +291,9 @@ class InteractiveBrokers(SecuritiesBroker):
     async def cancel_order(self, order_id: str):
         await self.call_async(self._cancel_order(order_id=order_id))
 
-    async def _order(self, order_id: str) -> Order:
+    @classmethod
+    def _build_order(cls, ib_trade):
         import ib_insync
-
         canceled_endings = {ib_insync.OrderStatus.Cancelled, ib_insync.OrderStatus.ApiCancelled, }
         bad_endings = {ib_insync.OrderStatus.Inactive, }
         pending_cancel_sets = {ib_insync.OrderStatus.PendingCancel, }
@@ -304,6 +308,30 @@ class InteractiveBrokers(SecuritiesBroker):
             cap = sum([fill.execution.shares * fill.execution.avgPrice for fill in trade.fills], 0.0)
             return round(cap / total_fills, 5)
 
+        qty = int(_total_fills(ib_trade) + ib_trade.remaining())
+        filled_qty = _total_fills(ib_trade)
+        qty = qty or filled_qty
+        assert qty >= filled_qty
+        avg_fill_price = _avg_price(ib_trade)
+        reason = ''
+        if ib_trade.orderStatus.status in bad_endings:
+            reason = ib_trade.orderStatus.status
+        is_canceled = ib_trade.orderStatus.status in canceled_endings
+        is_pending_cancel = ib_trade.orderStatus.status in pending_cancel_sets
+        order_id = str(ib_trade.order.permId)
+        order = Order(
+            order_id=order_id,
+            currency=ib_trade.contract.currency,
+            qty=qty,
+            filled_qty=filled_qty,
+            avg_price=avg_fill_price,
+            error_reason=reason,
+            is_canceled=is_canceled,
+            is_pending_cancel=is_pending_cancel,
+        )
+        return order
+
+    async def _order(self, order_id: str) -> Order:
         with self._order_bucket:
             client = self._client
             trades = client.trades()
@@ -312,26 +340,7 @@ class InteractiveBrokers(SecuritiesBroker):
             ib_order = ib_trade.order
             if ib_order.permId != order_id_int:
                 continue
-            qty = int(_total_fills(ib_trade) + ib_trade.remaining())
-            filled_qty = _total_fills(ib_trade)
-            qty = qty or filled_qty
-            assert qty >= filled_qty
-            avg_fill_price = _avg_price(ib_trade)
-            reason = ''
-            if ib_trade.orderStatus.status in bad_endings:
-                reason = ib_trade.orderStatus.status
-            is_canceled = ib_trade.orderStatus.status in canceled_endings
-            is_pending_cancel = ib_trade.orderStatus.status in pending_cancel_sets
-            order = Order(
-                order_id=order_id,
-                currency=ib_trade.contract.currency,
-                qty=qty,
-                filled_qty=filled_qty,
-                avg_price=avg_fill_price,
-                error_reason=reason,
-                is_canceled=is_canceled,
-                is_pending_cancel=is_pending_cancel,
-            )
+            order = self._build_order(ib_trade)
             return order
         raise Exception(f'查询不到订单{order_id}')
 

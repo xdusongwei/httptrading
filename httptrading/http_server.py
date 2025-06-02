@@ -39,69 +39,8 @@ class HttpTradingView(web.View):
         return contract
 
     @classmethod
-    def json_default(cls, obj):
-        if isinstance(obj, Position):
-            return {
-                'type': 'position',
-                'broker': obj.broker,
-                'brokerDisplay': obj.broker_display,
-                'contract': cls.json_default(obj.contract),
-                'unit': obj.unit.name,
-                'currency': obj.currency,
-                'qty': obj.qty,
-            }
-        if isinstance(obj, Contract):
-            return {
-                'type': 'contract',
-                'tradeType': obj.trade_type.name,
-                'region': obj.region,
-                'ticker': obj.ticker,
-            }
-        if isinstance(obj, Cash):
-            return {
-                'type': 'cash',
-                'currency': obj.currency,
-                'amount': obj.amount,
-            }
-        if isinstance(obj, MarketStatus):
-            return {
-                'type': 'marketStatus',
-                'region': obj.region,
-                'originStatus': obj.origin_status,
-                'unifiedStatus': obj.unified_status.name,
-            }
-        if isinstance(obj, Quote):
-            return {
-                'type': 'quote',
-                'contract': cls.json_default(obj.contract),
-                'currency': obj.currency,
-                'isTradable': obj.is_tradable,
-                'latest': obj.latest,
-                'preClose': obj.pre_close,
-                'highPrice': obj.high_price,
-                'lowPrice': obj.low_price,
-                'openPrice': obj.open_price,
-                'timestamp': int(obj.time.timestamp() * 1000),
-            }
-        if isinstance(obj, Order):
-            return {
-                'type': 'order',
-                'orderId': obj.order_id,
-                'currency': obj.currency,
-                'qty': obj.qty,
-                'filledQty': obj.filled_qty,
-                'avgPrice': obj.avg_price,
-                'errorReason': obj.error_reason,
-                'isCanceled': obj.is_canceled,
-                'isFilled': obj.is_filled,
-                'isCompleted': obj.is_completed,
-                'isCancelable': obj.is_cancelable,
-            }
-        raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
-
-    @classmethod
     def dumps(cls, obj):
-        return json.dumps(obj, default=cls.json_default)
+        return json.dumps(obj, default=GlobalConfig.JSON_DEFAULT.json_default)
 
     @classmethod
     def response_obj(cls, obj):

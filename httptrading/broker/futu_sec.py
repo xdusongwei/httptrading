@@ -30,6 +30,7 @@ class Futu(SecuritiesBroker):
 
     def _on_init(self):
         from futu import SysConfig, OpenQuoteContext, OpenSecTradeContext, SecurityFirm, TrdMarket, TrdEnv
+
         config_dict = self.broker_args
         self._trd_env: str = config_dict.get('trade_env', TrdEnv.REAL) or TrdEnv.REAL
         pk_path = config_dict.get('pk_path', '')
@@ -49,6 +50,7 @@ class Futu(SecuritiesBroker):
             )
             trade_ctx.set_sync_query_connect_timeout(6.0)
             self._trade_client = trade_ctx
+            self._when_create_client()
         if self._quote_client is None:
             SysConfig.set_all_thread_daemon(True)
             host = config_dict.get('host', '127.0.0.1')
@@ -56,6 +58,27 @@ class Futu(SecuritiesBroker):
             quote_ctx = OpenQuoteContext(host=host, port=port)
             quote_ctx.set_sync_query_connect_timeout(6.0)
             self._quote_client = quote_ctx
+
+    def _when_create_client(self):
+        from futu import TradeOrderHandlerBase, RET_OK
+
+        def _on_recv_rsp(content):
+            orders = self.df_to_list(content)
+            for futu_order in orders:
+                try:
+                    order = self._build_order(futu_order)
+                    self.dump_order(order)
+                except Exception as e:
+                    print(f'[{self.__class__.__name__}]_on_recv_rsp: {e}\norder: {futu_order}')
+
+        class TradeOrderHandler(TradeOrderHandlerBase):
+            def on_recv_rsp(self, rsp_pb):
+                ret, content = super().on_recv_rsp(rsp_pb)
+                if ret == RET_OK:
+                    _on_recv_rsp(content)
+                return ret, content
+
+        self._trade_client.set_handler(TradeOrderHandler())
 
     @classmethod
     def code_to_contract(cls, code) -> Contract | None:
@@ -98,7 +121,7 @@ class Futu(SecuritiesBroker):
         return code
 
     @classmethod
-    def df_to_dict(cls, df) -> dict:
+    def df_to_list(cls, df) -> list[dict]:
         return df.to_dict(orient='records')
 
     def _positions(self):
@@ -111,7 +134,7 @@ class Futu(SecuritiesBroker):
             )
         if resp != RET_OK:
             raise Exception(f'返回失败: {resp}')
-        positions = self.df_to_dict(data)
+        positions = self.df_to_list(data)
         for d in positions:
             code = d.get('code')
             currency = d.get('currency')
@@ -153,7 +176,7 @@ class Futu(SecuritiesBroker):
             )
         if resp != RET_OK:
             raise Exception(f'可用资金信息获取失败: {data}')
-        assets = self.df_to_dict(data)
+        assets = self.df_to_list(data)
         if len(assets) == 1:
             cash = Cash(
                 currency='USD',
@@ -219,7 +242,7 @@ class Futu(SecuritiesBroker):
             ret, data = self._quote_client.get_market_snapshot([code, ])
         if ret != RET_OK:
             raise ValueError(f'快照接口调用失败: {data}')
-        table = self.df_to_dict(data)
+        table = self.df_to_list(data)
         if len(table) != 1:
             raise ValueError(f'快照接口调用无数据: {data}')
         d = table[0]
@@ -337,7 +360,7 @@ class Futu(SecuritiesBroker):
             )
         if ret != RET_OK:
             raise Exception(f'下单失败: {data}')
-        orders = self.df_to_dict(data)
+        orders = self.df_to_list(data)
         assert len(orders) == 1
         order_id = orders[0]['order_id']
         assert order_id
@@ -365,9 +388,9 @@ class Futu(SecuritiesBroker):
             **kwargs
         ))
 
-    def _order(self, order_id: str) -> Order:
-        from futu import RET_OK, OrderStatus
-
+    @classmethod
+    def _build_order(cls, futu_order: dict) -> Order:
+        from futu import OrderStatus
         """
         富途证券的状态定义
         NONE = "N/A"                                # 未知状态
@@ -394,22 +417,11 @@ class Futu(SecuritiesBroker):
             OrderStatus.FAILED,
             OrderStatus.DISABLED,
             OrderStatus.DELETED,
-            OrderStatus.FILL_CANCELLED, # 不清楚对于成交数量有何影响.
+            OrderStatus.FILL_CANCELLED,  # 不清楚对于成交数量有何影响.
         }
         pending_cancel_sets = {OrderStatus.CANCELLING_PART, OrderStatus.CANCELLING_ALL, }
 
-        with self._refresh_order_bucket:
-            ret, data = self._trade_client.order_list_query(
-                order_id=order_id,
-                refresh_cache=True,
-                trd_env=self._trd_env,
-            )
-        if ret != RET_OK:
-            raise Exception(f'调用获取订单失败, 订单: {order_id}')
-        orders = self.df_to_dict(data)
-        if len(orders) != 1:
-            raise Exception(f'找不到订单(未完成), 订单: {order_id}')
-        futu_order = orders[0]
+        order_id = futu_order['order_id']
         reason = ''
         order_status: str = futu_order['order_status']
         if order_status in bad_endings:
@@ -426,6 +438,23 @@ class Futu(SecuritiesBroker):
             is_canceled=is_canceled,
             is_pending_cancel=is_pending_cancel,
         )
+
+    def _order(self, order_id: str) -> Order:
+        from futu import RET_OK
+
+        with self._refresh_order_bucket:
+            ret, data = self._trade_client.order_list_query(
+                order_id=order_id,
+                refresh_cache=True,
+                trd_env=self._trd_env,
+            )
+        if ret != RET_OK:
+            raise Exception(f'调用获取订单失败, 订单: {order_id}')
+        orders = self.df_to_list(data)
+        if len(orders) != 1:
+            raise Exception(f'找不到订单(未完成), 订单: {order_id}')
+        futu_order = orders[0]
+        return self._build_order(futu_order)
 
     async def order(self, order_id: str) -> Order:
         return await self.call_sync(lambda : self._order(order_id=order_id))

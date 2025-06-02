@@ -1,8 +1,11 @@
+import os
+import json
 import asyncio
 import importlib
 from abc import ABC
 from typing import Type, Callable, Any
 from httptrading.model import *
+from httptrading.tool.locate import *
 
 
 class BaseBroker(ABC):
@@ -35,6 +38,17 @@ class BaseBroker(ABC):
 
     async def shutdown(self):
         pass
+
+    def dump_order(self, order: Order):
+        if folder := GlobalConfig.STREAM_DUMP_FOLDER:
+            json_str = json.dumps(
+                order,
+                indent=2,
+                default=GlobalConfig.JSON_DEFAULT.json_default,
+            )
+            filename = f'{self.instance_id}-{order.order_id}.json'
+            full_path = os.path.join(folder, filename)
+            LocateTools.write_file(full_path, json_str)
 
     async def call_sync(self, f: Callable[[], Any]):
         try:
