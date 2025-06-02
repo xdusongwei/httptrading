@@ -63,7 +63,7 @@ class Futu(SecuritiesBroker):
         from futu import TradeOrderHandlerBase, RET_OK
 
         def _on_recv_rsp(content):
-            orders = self.df_to_list(content)
+            orders = self._df_to_list(content)
             for futu_order in orders:
                 try:
                     order = self._build_order(futu_order)
@@ -121,7 +121,7 @@ class Futu(SecuritiesBroker):
         return code
 
     @classmethod
-    def df_to_list(cls, df) -> list[dict]:
+    def _df_to_list(cls, df) -> list[dict]:
         return df.to_dict(orient='records')
 
     def _positions(self):
@@ -134,7 +134,7 @@ class Futu(SecuritiesBroker):
             )
         if resp != RET_OK:
             raise Exception(f'返回失败: {resp}')
-        positions = self.df_to_list(data)
+        positions = self._df_to_list(data)
         for d in positions:
             code = d.get('code')
             currency = d.get('currency')
@@ -176,7 +176,7 @@ class Futu(SecuritiesBroker):
             )
         if resp != RET_OK:
             raise Exception(f'可用资金信息获取失败: {data}')
-        assets = self.df_to_list(data)
+        assets = self._df_to_list(data)
         if len(assets) == 1:
             cash = Cash(
                 currency='USD',
@@ -242,7 +242,7 @@ class Futu(SecuritiesBroker):
             ret, data = self._quote_client.get_market_snapshot([code, ])
         if ret != RET_OK:
             raise ValueError(f'快照接口调用失败: {data}')
-        table = self.df_to_list(data)
+        table = self._df_to_list(data)
         if len(table) != 1:
             raise ValueError(f'快照接口调用无数据: {data}')
         d = table[0]
@@ -360,7 +360,7 @@ class Futu(SecuritiesBroker):
             )
         if ret != RET_OK:
             raise Exception(f'下单失败: {data}')
-        orders = self.df_to_list(data)
+        orders = self._df_to_list(data)
         assert len(orders) == 1
         order_id = orders[0]['order_id']
         assert order_id
@@ -450,7 +450,7 @@ class Futu(SecuritiesBroker):
             )
         if ret != RET_OK:
             raise Exception(f'调用获取订单失败, 订单: {order_id}')
-        orders = self.df_to_list(data)
+        orders = self._df_to_list(data)
         if len(orders) != 1:
             raise Exception(f'找不到订单(未完成), 订单: {order_id}')
         futu_order = orders[0]

@@ -116,6 +116,61 @@ class LongBridge(SecuritiesBroker):
         self._lp_config = config
         self._quote_client = quote_ctx
         self._trade_client = trade_ctx
+        self._when_create_client()
+
+    @classmethod
+    def _order_status(cls, lp_order):
+        # 订单状态定义见
+        # https://open.longportapp.com/zh-CN/docs/trade/trade-definition#orderstatus
+        from longport.openapi import OrderStatus, PushOrderChanged, OrderDetail
+
+        canceled_endings = {OrderStatus.Canceled, }
+        bad_endings = {
+            OrderStatus.Rejected,
+            OrderStatus.Expired,
+            OrderStatus.PartialWithdrawal,
+        }
+        pending_cancel_sets = {OrderStatus.PendingCancel, }
+
+        if isinstance(lp_order, PushOrderChanged):
+            reason = ''
+            if lp_order.status in bad_endings:
+                reason = str(lp_order.status)
+            is_canceled = lp_order.status in canceled_endings
+            is_pending_cancel = lp_order.status in pending_cancel_sets
+            return reason, is_canceled, is_pending_cancel
+        elif isinstance(lp_order, OrderDetail):
+            reason = ''
+            if lp_order.status in bad_endings:
+                reason = str(lp_order.status)
+            is_canceled = lp_order.status in canceled_endings
+            is_pending_cancel = lp_order.status in pending_cancel_sets
+            return reason, is_canceled, is_pending_cancel
+        raise Exception(f'{lp_order}对象不是已知可解析订单状态的类型')
+
+    def _when_create_client(self):
+        from longport.openapi import PushOrderChanged, TopicType, OrderStatus
+
+        def _on_order_changed(event: PushOrderChanged):
+            reason, is_canceled, is_pending_cancel = self._order_status(event)
+            try:
+                order = Order(
+                    order_id=event.order_id,
+                    currency=event.currency,
+                    qty=int(event.executed_quantity),
+                    filled_qty=int(event.executed_quantity),
+                    avg_price=float(event.executed_price) if event.executed_price else 0.0,
+                    error_reason=reason,
+                    is_canceled=is_canceled,
+                    is_pending_cancel=is_pending_cancel,
+                )
+                self.dump_order(order)
+            except Exception as e:
+                print(f'[{self.__class__.__name__}]_on_order_changed: {e}\norder: {event}')
+
+        trade_client = self._trade_client
+        trade_client.set_on_order_changed(_on_order_changed)
+        trade_client.subscribe([TopicType.Private])
 
     def _try_refresh(self):
         if not self._auto_refresh_token:
@@ -344,26 +399,10 @@ class LongBridge(SecuritiesBroker):
         ))
 
     def _order(self, order_id: str) -> Order:
-        # 订单状态定义见
-        # https://open.longportapp.com/zh-CN/docs/trade/trade-definition#orderstatus
-        from longport.openapi import OrderStatus
-
-        canceled_endings = {OrderStatus.Canceled, }
-        bad_endings = {
-            OrderStatus.Rejected,
-            OrderStatus.Expired,
-            OrderStatus.PartialWithdrawal,
-        }
-        pending_cancel_sets = {OrderStatus.PendingCancel, }
-
         with self._assets_bucket:
             self._try_refresh()
             resp = self._trade_client.order_detail(order_id=order_id)
-        reason = ''
-        if resp.status in bad_endings:
-            reason = str(resp.status)
-        is_canceled = resp.status in canceled_endings
-        is_pending_cancel = resp.status in pending_cancel_sets
+        reason, is_canceled, is_pending_cancel = self._order_status(resp)
         return Order(
             order_id=order_id,
             currency=resp.currency,
