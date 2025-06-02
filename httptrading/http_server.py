@@ -1,4 +1,5 @@
 import json
+import asyncio
 from datetime import datetime, UTC
 from typing import Callable
 from aiohttp import web
@@ -95,6 +96,7 @@ class OrderStateView(HttpTradingView):
         broker = self.current_broker()
         order_id = self.request.query.get('orderId', '')
         order: Order = await broker.order(order_id=order_id)
+        _ = asyncio.create_task(broker.call_sync(lambda : broker.dump_order(order)))
         return self.response_api(broker, {
             'order': order,
         })
