@@ -133,20 +133,17 @@ class LongBridge(SecuritiesBroker):
         pending_cancel_sets = {OrderStatus.PendingCancel, }
 
         if isinstance(lp_order, PushOrderChanged):
-            reason = ''
-            if lp_order.status in bad_endings:
-                reason = str(lp_order.status)
-            is_canceled = lp_order.status in canceled_endings
-            is_pending_cancel = lp_order.status in pending_cancel_sets
-            return reason, is_canceled, is_pending_cancel
+            status = lp_order.status
         elif isinstance(lp_order, OrderDetail):
-            reason = ''
-            if lp_order.status in bad_endings:
-                reason = str(lp_order.status)
-            is_canceled = lp_order.status in canceled_endings
-            is_pending_cancel = lp_order.status in pending_cancel_sets
-            return reason, is_canceled, is_pending_cancel
-        raise Exception(f'{lp_order}对象不是已知可解析订单状态的类型')
+            status = lp_order.status
+        else:
+            raise Exception(f'{lp_order}对象不是已知可解析订单状态的类型')
+        reason = ''
+        if status in bad_endings:
+            reason = str(status)
+        is_canceled = status in canceled_endings
+        is_pending_cancel = status in pending_cancel_sets
+        return reason, is_canceled, is_pending_cancel
 
     def _when_create_client(self):
         from longport.openapi import PushOrderChanged, TopicType, OrderStatus

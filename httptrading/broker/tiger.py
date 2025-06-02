@@ -46,6 +46,62 @@ class Tiger(SecuritiesBroker):
         self._trade_client = self._trade_client or TradeClient(client_config)
         protocol, host, port = client_config.socket_host_port
         self._push_client = self._push_client or PushClient(host, port, use_ssl=(protocol == 'ssl'))
+        self._when_create_client()
+
+    @classmethod
+    def _order_status(cls, tiger_order):
+        # 订单状态定义见
+        # https://quant.itigerup.com/openapi/zh/python/appendix2/overview.html#%E8%AE%A2%E5%8D%95%E7%8A%B6%E6%80%81
+        # 注意文档比 SDK 定义要少
+        from tigeropen.trade.domain.order import Order as TigerOrder, OrderStatus
+        from tigeropen.push.pb.OrderStatusData_pb2 import OrderStatusData
+        from tigeropen.common.util.order_utils import get_order_status
+
+        canceled_endings = {OrderStatus.CANCELLED, }
+        bad_endings = {
+            OrderStatus.REJECTED,
+            OrderStatus.EXPIRED,
+        }
+        pending_cancel_sets = {OrderStatus.PENDING_CANCEL, }
+
+        if isinstance(tiger_order, TigerOrder):
+            status = tiger_order.status
+        elif isinstance(tiger_order, OrderStatusData):
+            status = get_order_status(tiger_order.status)
+        else:
+            raise Exception(f'{tiger_order}对象不是已知可解析订单状态的类型')
+        reason = ''
+        if status in bad_endings:
+            reason = str(status)
+        is_canceled = status in canceled_endings
+        is_pending_cancel = status in pending_cancel_sets
+        return reason, is_canceled, is_pending_cancel
+
+    def _when_create_client(self):
+        from tigeropen.push.pb.OrderStatusData_pb2 import OrderStatusData
+
+        def _on_order_changed(frame: OrderStatusData):
+            try:
+                reason, is_canceled, is_pending_cancel = self._order_status(frame)
+                order = Order(
+                    order_id=str(frame.id),
+                    currency=frame.currency,
+                    qty=frame.totalQuantity or 0,
+                    filled_qty=frame.filledQuantity or 0,
+                    avg_price=frame.avgFillPrice or 0.0,
+                    error_reason=reason,
+                    is_canceled=is_canceled,
+                    is_pending_cancel=is_pending_cancel,
+                )
+                self.dump_order(order)
+            except Exception as e:
+                print(f'[{self.__class__.__name__}]_on_order_changed: {e}\norder: {frame}')
+
+        client_config = self._config
+        push_client = self._push_client
+        push_client.order_changed = _on_order_changed
+        push_client.connect(client_config.tiger_id, client_config.private_key)
+        push_client.subscribe_order(account=client_config.account)
 
     def _grab_quote(self):
         with self._grab_lock:
@@ -318,27 +374,14 @@ class Tiger(SecuritiesBroker):
         ))
 
     def _order(self, order_id: str) -> Order:
-        # 订单状态定义见
-        # https://quant.itigerup.com/openapi/zh/python/appendix2/overview.html#%E8%AE%A2%E5%8D%95%E7%8A%B6%E6%80%81
-        # 注意文档比 SDK 定义要少
-        from tigeropen.trade.domain.order import Order as TigerOrder, OrderStatus
-
-        canceled_endings = {OrderStatus.CANCELLED, }
-        bad_endings = {
-            OrderStatus.REJECTED,
-            OrderStatus.EXPIRED,
-        }
-        pending_cancel_sets = {OrderStatus.PENDING_CANCEL, }
+        from tigeropen.trade.domain.order import Order as TigerOrder
 
         with self._order_bucket:
             tiger_order: TigerOrder = self._trade_client.get_order(id=int(order_id))
         if tiger_order is None:
             raise Exception(f'查询不到订单{order_id}')
 
-        order_status = tiger_order.status
-        reason = tiger_order.reason or (order_status.name if order_status in bad_endings else None)
-        is_canceled = order_status in canceled_endings
-        is_pending_cancel = order_status in pending_cancel_sets
+        reason, is_canceled, is_pending_cancel = self._order_status(tiger_order)
         return Order(
             order_id=order_id,
             currency=tiger_order.contract.currency,
