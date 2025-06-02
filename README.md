@@ -383,6 +383,10 @@ POST /httptrading/api/{instanceId}/order/cancel
 }
 ```
 
+```
+⚠️ 撤单接口仅完成对交易通道的撤单接口调用, 不代表在较短时间后订单可以进入撤销的状态. 一个例子是假日发起撤单, 通道不一定执行撤单而是进入已请求撤单的状态.
+```
+
 
 ### 查询单个订单
 
@@ -409,15 +413,19 @@ GET /httptrading/api/{instanceId}/order/state?orderId={订单号}
     "errorReason": "", // 如果订单异常, 这里记录错误信息
     "isCanceled": false, // 是否已撤销
     "isFilled": false, // 是否全部成交
-    "isCompleted": false, // 全部成交 或者 有异常 或者 已撤销
-    "isCancelable": true // 是否可撤的标志
+    "isCompleted": false, // 全部成交 或者 有订单异常 或者 已撤销
+    "isCancelable": true // 是否可撤的标志, 等价于 not isCompleted and not isPendingCancel
   }
 }
 ```
+⚠️ 有些交易通道不支持查询单个订单状态, 而是查询活动订单的列表来实现, 意味着订单在结束周期的交易日之后, 将查不到订单.
 
-```
-富途证券不支持查询单个订单. 意味着订单结束周期的交易日之后, 将查不到订单.
-```
+| 交易通道 | 支持查单个订单 |
+|------|---------|
+| 盈透证券 | ❌       |
+| 富途证券 | ❌       |
+| 长桥证券 | ✅       |
+| 老虎证券 | ✅       |
 
 交易通道的参数
 ------------
