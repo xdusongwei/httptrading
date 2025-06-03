@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:71c0ffb5f8fe85764f179b03806708de1949baec9db59fd99661bce9684746be"
+content_hash = "sha256:b9f4168fbae46c83dacbc75985943d9a9328c4bba164b79748068c813fb03620"
 
 [[metadata.targets]]
 requires_python = ">=3.13"
@@ -196,6 +196,17 @@ files = [
     {file = "multidict-6.4.4-cp313-cp313t-win_amd64.whl", hash = "sha256:ba852168d814b2c73333073e1c7116d9395bea69575a01b0b3c89d2d5a87c8fb"},
     {file = "multidict-6.4.4-py3-none-any.whl", hash = "sha256:bd4557071b561a8b3b6075c3ce93cf9bfb6182cb241805c3d66ced3b75eff4ac"},
     {file = "multidict-6.4.4.tar.gz", hash = "sha256:69ee9e6ba214b5245031b76233dd95408a0fd57fdb019ddcc1ead4790932a8e8"},
+]
+
+[[package]]
+name = "nest-asyncio"
+version = "1.6.0"
+requires_python = ">=3.5"
+summary = "Patch asyncio to allow nested event loops"
+groups = ["default"]
+files = [
+    {file = "nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c"},
+    {file = "nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe"},
 ]
 
 [[package]]

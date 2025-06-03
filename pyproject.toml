@@ -1,11 +1,11 @@
 [project]
 name = "httptrading"
-version = "1.0.2"
+version = "1.0.3"
 description = "统一交易通道的接口服务"
 authors = [
     {name = "songwei", email = "github@songwei.name"},
 ]
-dependencies = ["aiohttp>=3.12.6", "humanize>=4.12.3", "tomlkit>=0.13.2"]
+dependencies = ["aiohttp>=3.12.6", "humanize>=4.12.3", "tomlkit>=0.13.2", "nest-asyncio>=1.6.0"]
 requires-python = ">=3.13"
 readme = "README.md"
 license = {text = "MIT"}

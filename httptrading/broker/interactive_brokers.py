@@ -4,6 +4,7 @@ https://ib-insync.readthedocs.io/readme.html
 """
 import re
 import asyncio
+import nest_asyncio
 from typing import Any
 from httptrading.tool.leaky_bucket import *
 from httptrading.tool.time import *
@@ -29,6 +30,7 @@ class InteractiveBrokers(SecuritiesBroker):
     def _on_init(self):
         self._account_id = self.broker_args.get('account_id')
         self._client_id = self.broker_args.get('client_id')
+        nest_asyncio.apply()
 
     async def start(self):
         await self._try_create_client()
