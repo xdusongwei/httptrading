@@ -25,7 +25,10 @@ class BaseBroker(ABC):
         return BrokerRegister.get_meta(type(self)).display
 
     def detect_package(self):
-        pkg_info = BrokerRegister.get_meta(type(self)).detect_package
+        meta = BrokerRegister.get_meta(type(self))
+        if not meta:
+            return
+        pkg_info = meta.detect_package
         if pkg_info is None:
             return
         try:
