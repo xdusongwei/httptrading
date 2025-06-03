@@ -197,7 +197,7 @@ class InteractiveBrokers(SecuritiesBroker):
             **kwargs
     ) -> str:
         import ib_insync
-        with self._order_bucket:
+        async with self._order_bucket:
             client = self._client
             ib_contract = await self.contract_to_ib_contract(contract)
 
@@ -278,7 +278,7 @@ class InteractiveBrokers(SecuritiesBroker):
 
     async def _cancel_order(self, order_id: str):
         order_id_int = int(order_id)
-        with self._order_bucket:
+        async with self._order_bucket:
             client = self._client
             trades = client.trades()
             for ib_trade in trades:
@@ -332,7 +332,7 @@ class InteractiveBrokers(SecuritiesBroker):
         return order
 
     async def _order(self, order_id: str) -> Order:
-        with self._order_bucket:
+        async with self._order_bucket:
             client = self._client
             trades = client.trades()
         order_id_int = int(order_id)
