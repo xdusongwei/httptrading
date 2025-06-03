@@ -42,15 +42,15 @@ class BaseBroker(ABC):
     def dump_order(self, order: Order):
         if not isinstance(order, Order):
             return
-        folder = GlobalConfig.STREAM_DUMP_FOLDER
+        folder = HtGlobalConfig.STREAM_DUMP_FOLDER
         if not folder:
             return
         if not os.path.isdir(folder):
-            return 
+            return
         json_str = json.dumps(
             order,
             indent=2,
-            default=GlobalConfig.JSON_DEFAULT.json_default,
+            default=HtGlobalConfig.JSON_DEFAULT.json_default,
         )
         filename = f'{self.instance_id}-{order.order_id}.json'
         full_path = os.path.join(folder, filename)

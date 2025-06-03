@@ -228,8 +228,14 @@ class JsonDefault:
         raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
-class GlobalConfig:
+class HtGlobalConfig:
+    # 提供一个静态文件目录, 使得当推送订单时将订单落盘为 json 文件
+    # 对于一些没有提供永久查询单个订单接口的交易通道, 静态文件可以是查询历史订单的击穿方法.
     STREAM_DUMP_FOLDER: str = None
+    # 对于一些没有提供永久查询单个订单接口的交易通道, 可以在启动服务时把当时的活动订单更新一遍.
+    # 比如重启服务后担心漏掉订单的推送.
+    DUMP_ACTIVE_ORDERS: bool = False
+    # 如果需要定制接口返回对象的行为, 这里替换为自定义的类
     JSON_DEFAULT: Type[JsonDefault] = JsonDefault
 
 
@@ -249,5 +255,5 @@ __all__ = [
     'DetectPkg',
     'BrokerMeta',
     'JsonDefault',
-    'GlobalConfig',
+    'HtGlobalConfig',
 ]

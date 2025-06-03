@@ -34,6 +34,15 @@ class InteractiveBrokers(SecuritiesBroker):
 
     async def start(self):
         await self._try_create_client()
+        client = self._client
+        if HtGlobalConfig.DUMP_ACTIVE_ORDERS:
+            trades = client.trades()
+            for trade in trades:
+                try:
+                    order = self._build_order(trade)
+                    await self.call_sync(lambda: self.dump_order(order))
+                except Exception as ex:
+                    print(f'[{self.__class__.__name__}]DUMP_ACTIVE_ORDERS: {ex}\norder: {trade}')
 
     async def shutdown(self):
         ib_socket = self._client

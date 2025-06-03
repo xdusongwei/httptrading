@@ -41,7 +41,7 @@ class HttpTradingView(web.View):
 
     @classmethod
     def dumps(cls, obj):
-        return json.dumps(obj, default=GlobalConfig.JSON_DEFAULT.json_default)
+        return json.dumps(obj, default=HtGlobalConfig.JSON_DEFAULT.json_default)
 
     @classmethod
     def response_obj(cls, obj):
@@ -210,6 +210,7 @@ def std_api_factory() -> list[web.RouteDef]:
         web.view(r'/httptrading/api/{instance_id:\w{16,32}}/market/quote', QuoteView),
     ]
     return apis
+
 
 def run(
         host: str,

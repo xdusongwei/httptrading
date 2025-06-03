@@ -60,16 +60,17 @@ class Futu(SecuritiesBroker):
             self._quote_client = quote_ctx
 
     def _when_create_client(self):
-        from futu import TradeOrderHandlerBase, RET_OK
+        from futu import TradeOrderHandlerBase, RET_OK, OpenSecTradeContext
+
+        client: OpenSecTradeContext = self._trade_client
 
         def _on_recv_rsp(content):
-            orders = self._df_to_list(content)
-            for futu_order in orders:
+            for _futu_order in self._df_to_list(content):
                 try:
-                    order = self._build_order(futu_order)
-                    self.dump_order(order)
-                except Exception as e:
-                    print(f'[{self.__class__.__name__}]_on_recv_rsp: {e}\norder: {futu_order}')
+                    _order = self._build_order(_futu_order)
+                    self.dump_order(_order)
+                except Exception as _ex:
+                    print(f'[{self.__class__.__name__}]_on_recv_rsp: {_ex}\norder: {_futu_order}')
 
         class TradeOrderHandler(TradeOrderHandlerBase):
             def on_recv_rsp(self, rsp_pb):
@@ -78,7 +79,29 @@ class Futu(SecuritiesBroker):
                     _on_recv_rsp(content)
                 return ret, content
 
-        self._trade_client.set_handler(TradeOrderHandler())
+        client.set_handler(TradeOrderHandler())
+
+    async def start(self):
+        from futu import RET_OK, OpenSecTradeContext
+
+        client: OpenSecTradeContext = self._trade_client
+        if HtGlobalConfig.DUMP_ACTIVE_ORDERS:
+            try:
+                ret, data = client.order_list_query(
+                    refresh_cache=True,
+                    trd_env=self._trd_env,
+                )
+            except Exception as e:
+                print(f'[{self.__class__.__name__}]DUMP_ACTIVE_ORDERS: {e}')
+            else:
+                if ret == RET_OK:
+                    futu_orders = self._df_to_list(data)
+                    for futu_order in futu_orders:
+                        try:
+                            order = self._build_order(futu_order)
+                            await self.call_sync(lambda : self.dump_order(order))
+                        except Exception as ex:
+                            print(f'[{self.__class__.__name__}]DUMP_ACTIVE_ORDERS: {ex}\norder: {futu_order}')
 
     @classmethod
     def code_to_contract(cls, code) -> Contract | None:
