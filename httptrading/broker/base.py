@@ -82,6 +82,7 @@ class BaseBroker(ABC):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         raise NotImplementedError

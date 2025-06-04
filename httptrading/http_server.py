@@ -84,6 +84,7 @@ class PlaceOrderView(HttpTradingView):
             qty=qty,
             price=price,
             json=body_d,
+            full_args=body_d,
         )
         return self.response_api(broker, {
             'orderId': order_id,

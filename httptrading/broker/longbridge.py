@@ -310,6 +310,7 @@ class LongBridge(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         from longport.openapi import OrderType as LbOrderType, OrderSide, TimeInForceType, OutsideRTH
@@ -382,6 +383,7 @@ class LongBridge(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         return await self.call_sync(lambda : self._place_order(
@@ -392,6 +394,7 @@ class LongBridge(SecuritiesBroker):
             direction=direction,
             qty=qty,
             price=price,
+            full_args=full_args,
             **kwargs
         ))
 

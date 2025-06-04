@@ -205,6 +205,7 @@ class InteractiveBrokers(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         import ib_insync
@@ -274,6 +275,7 @@ class InteractiveBrokers(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         return await self.call_async(self._place_order(
@@ -284,6 +286,7 @@ class InteractiveBrokers(SecuritiesBroker):
             direction=direction,
             qty=qty,
             price=price,
+            full_args=full_args,
             **kwargs
         ))
 

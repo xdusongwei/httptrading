@@ -281,6 +281,7 @@ class Tiger(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         if contract.trade_type != TradeType.Securities:
@@ -360,6 +361,7 @@ class Tiger(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         return await self.call_sync(lambda: self._place_order(
@@ -370,6 +372,7 @@ class Tiger(SecuritiesBroker):
             direction=direction,
             qty=qty,
             price=price,
+            full_args=full_args,
             **kwargs
         ))
 

@@ -320,6 +320,7 @@ class Futu(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         from futu import RET_OK, TrdSide, OrderType as FutuOrderType, TimeInForce as FutuTimeInForce, Session
@@ -398,6 +399,7 @@ class Futu(SecuritiesBroker):
             direction: str,
             qty: int,
             price: float = None,
+            full_args: dict = None,
             **kwargs
     ) -> str:
         return await self.call_sync(lambda : self._place_order(
@@ -408,6 +410,7 @@ class Futu(SecuritiesBroker):
             direction=direction,
             qty=qty,
             price=price,
+            full_args=full_args,
             **kwargs
         ))
 

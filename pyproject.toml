@@ -1,6 +1,6 @@
 [project]
 name = "httptrading"
-version = "1.0.3"
+version = "1.0.4"
 description = "统一交易通道的接口服务"
 authors = [
     {name = "songwei", email = "github@songwei.name"},
