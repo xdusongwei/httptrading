@@ -163,28 +163,33 @@ class MarketStatusView(HttpTradingView):
         })
 
 
-@web.middleware
-async def auth_middleware(request: web.Request, handler):
-    instance_id = request.match_info.get('instance_id', '')
-    token = request.headers.get('HT-TOKEN', '')
-    if not instance_id:
-        raise web.HTTPNotFound
-    if not token:
-        raise web.HTTPNotFound
-    if len(token) < 16 or len(token) > 64:
-        raise web.HTTPNotFound
-    for broker in HttpTradingView.brokers():
-        if broker.instance_id != instance_id:
-            continue
-        if token not in broker.tokens:
+def create_auth_middleware(token_header: str):
+    assert isinstance(token_header, str)
+    assert token_header
+
+    @web.middleware
+    async def _auth_middleware(request: web.Request, handler):
+        instance_id = request.match_info.get('instance_id', '')
+        token = request.headers.get(token_header, '')
+        if not instance_id:
             raise web.HTTPNotFound
-        setattr(request, '__current_broker__', broker)
-        break
-    else:
-        raise web.HTTPNotFound
-    response: web.Response = await handler(request)
-    delattr(request, '__current_broker__')
-    return response
+        if not token:
+            raise web.HTTPNotFound
+        if len(token) < 16 or len(token) > 64:
+            raise web.HTTPNotFound
+        for broker in HttpTradingView.brokers():
+            if broker.instance_id != instance_id:
+                continue
+            if token not in broker.tokens:
+                raise web.HTTPNotFound
+            setattr(request, '__current_broker__', broker)
+            break
+        else:
+            raise web.HTTPNotFound
+        response: web.Response = await handler(request)
+        delattr(request, '__current_broker__')
+        return response
+    return _auth_middleware
 
 
 @web.middleware
@@ -219,6 +224,7 @@ def run(
         brokers: list[BaseBroker],
         std_apis: Callable[[], list[web.RouteDef]] = None,
         extend_apis: list[web.RouteDef] = None,
+        token_header: str = 'HT-TOKEN',
         **kwargs
 ) -> None:
     """
@@ -227,11 +233,12 @@ def run(
     @param brokers: 需要控制的交易通道对象列表
     @param std_apis: 如果需要替换默认提供的接口, 这里提供工厂函数的回调
     @param extend_apis: 如果需要增加自定义接口, 这里传入 RouteDef 列表
+    @param token_header: 定制 token 凭据的 header 键名
     @param kwargs: 其他的参数将传给 aiohttp.web.run_app 函数
     """
     app = web.Application(
         middlewares=[
-            auth_middleware,
+            create_auth_middleware(token_header=token_header),
             exception_middleware,
         ],
     )
