@@ -120,21 +120,17 @@ class Tiger(SecuritiesBroker):
     @classmethod
     def symbol_to_contract(cls, symbol) -> Contract | None:
         region = ''
-        ticker = ''
         if re.match(r'^[01356]\d{5}$', symbol):
             region = 'CN'
-            ticker = symbol
         if re.match(r'^\d{5}$', symbol):
             region = 'HK'
-            ticker = symbol
         if re.match(r'^\w{1,5}$', symbol):
             region = 'US'
-            ticker = symbol
-        if not region or not ticker:
+        if not region:
             return None
         return Contract(
             trade_type=TradeType.Securities,
-            ticker=ticker,
+            symbol=symbol,
             region=region,
         )
 
@@ -142,14 +138,14 @@ class Tiger(SecuritiesBroker):
     def contract_to_symbol(cls, contract: Contract) -> str | None:
         if contract.trade_type != TradeType.Securities:
             return None
-        region, ticker = contract.region, contract.ticker
+        region, contract_symbol = contract.region, contract.symbol
         symbol = None
-        if region == 'CN' and re.match(r'^[01356]\d{5}$', ticker):
-            symbol = ticker
-        elif region == 'HK' and re.match(r'^\d{5}$', ticker):
-            symbol = ticker
-        elif region == 'US' and re.match(r'^\w{1,5}$', ticker):
-            symbol = ticker
+        if region == 'CN' and re.match(r'^[01356]\d{5}$', contract_symbol):
+            symbol = contract_symbol
+        elif region == 'HK' and re.match(r'^\d{5}$', contract_symbol):
+            symbol = contract_symbol
+        elif region == 'US' and re.match(r'^\w{1,5}$', contract_symbol):
+            symbol = contract_symbol
         return symbol
 
     def _positions(self):

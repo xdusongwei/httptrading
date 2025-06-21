@@ -188,24 +188,24 @@ class LongBridge(SecuritiesBroker):
     @classmethod
     def symbol_to_contract(cls, symbol: str) -> Contract | None:
         region = ''
-        ticker = ''
+        contract_symbol = ''
         if m := re.match(r'^(\S+)\.US$', symbol):
             region = 'US'
-            ticker = m.groups()[0]
+            contract_symbol = m.groups()[0]
         if m := re.match(r'^(\d{5})\.HK$', symbol):
             region = 'HK'
-            ticker = m.groups()[0]
+            contract_symbol = m.groups()[0]
         if m := re.match(r'^(\d{6})\.SH$', symbol):
             region = 'CN'
-            ticker = m.groups()[0]
+            contract_symbol = m.groups()[0]
         if m := re.match(r'^(\d{6})\.SZ$', symbol):
             region = 'CN'
-            ticker = m.groups()[0]
-        if not region or not ticker:
+            contract_symbol = m.groups()[0]
+        if not region or not contract_symbol:
             return None
         return Contract(
             trade_type=TradeType.Securities,
-            ticker=ticker,
+            symbol=contract_symbol,
             region=region,
         )
 
@@ -213,16 +213,16 @@ class LongBridge(SecuritiesBroker):
     def contract_to_symbol(cls, contract: Contract) -> str:
         if contract.trade_type != TradeType.Securities:
             raise Exception(f'不能支持的交易品种{contract}映射为交易代码')
-        region, ticker = contract.region, contract.ticker
+        region, symbol = contract.region, contract.symbol
         code = None
-        if region == 'CN' and re.match(r'^[56]\d{5}$', ticker):
-            code = f'{ticker}.SH'
-        elif region == 'CN' and re.match(r'^[013]\d{5}$', ticker):
-            code = f'{ticker}.SZ'
-        elif region == 'HK' and re.match(r'^\d{5}$', ticker):
-            code = f'{ticker}.HK'
-        elif region == 'US' and re.match(r'^\w+$', ticker):
-            code = f'{ticker}.US'
+        if region == 'CN' and re.match(r'^[56]\d{5}$', symbol):
+            code = f'{symbol}.SH'
+        elif region == 'CN' and re.match(r'^[013]\d{5}$', symbol):
+            code = f'{symbol}.SZ'
+        elif region == 'HK' and re.match(r'^\d{5}$', symbol):
+            code = f'{symbol}.HK'
+        elif region == 'US' and re.match(r'^\w+$', symbol):
+            code = f'{symbol}.US'
         if not code:
             raise Exception(f'不能映射{contract}为交易代码')
         return code

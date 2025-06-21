@@ -172,10 +172,10 @@ GET /httptrading/api/{instanceId}/market/quote
 | 参数        | 说明      | 举例                 |
 |-----------|---------|--------------------|
 | tradeType | 说明标的的品种 | Securities: 证券     |
-| ticker    | 代码      | QQQ, 00700, 000001 |
+| symbol    | 代码      | QQQ, 00700, 000001 |
 | region    | 以国家区分代码 | US, HK, CN         |
 
-举例 ?tradeType=Securities&region=CN&ticker=000001 参数的结果:
+举例 ?tradeType=Securities&region=CN&symbol=000001 参数的结果:
 ```json lines
 {
 	"type": "apiResponse",
@@ -190,7 +190,7 @@ GET /httptrading/api/{instanceId}/market/quote
 			"type": "contract",
 			"tradeType": "Securities",
 			"region": "CN",
-			"ticker": "000001"
+			"symbol": "000001"
 		},
 		"currency": "CNY",  // 币种
 		"isTradable": true,  // 此时是否可交易, 比如受到停牌熔断影响
@@ -298,7 +298,7 @@ GET /httptrading/api/{instanceId}/position/state
 				"type": "contract",
 				"tradeType": "Securities",
 				"region": "US",
-				"ticker": "QQQ"
+				"symbol": "QQQ"
 			},
 			"unit": "Share",
 			"currency": "USD",
@@ -318,7 +318,7 @@ POST /httptrading/api/{instanceId}/order/place
 | 参数          | 说明       | 举例                                               |
 |-------------|----------|--------------------------------------------------|
 | tradeType   | 说明标的的品种  | Securities: 证券                                   |
-| ticker      | 代码       | QQQ, 00700, 000001                               |
+| symbol      | 代码       | QQQ, 00700, 000001                               |
 | region      | 以国家区分代码  | US, HK, CN                                       |
 | price       | 限价       | 市价单不填此项                                          |
 | qty         | 订单数量, 整数 |                                                  |
@@ -331,7 +331,7 @@ POST /httptrading/api/{instanceId}/order/place
 ```json lines
 {
 	"tradeType": "Securities",
-	"ticker": "AAPL",
+	"symbol": "AAPL",
 	"region": "US",
 	"price": 200.00,
 	"qty": 12,
@@ -354,7 +354,7 @@ POST /httptrading/api/{instanceId}/order/place
 	"orderId": "69788888", // 订单号
 	"args": { // 传递的参数
 		"tradeType": "Securities",
-		"ticker": "AAPL",
+		"symbol": "AAPL",
 		"region": "US",
 		"price": 200,
 		"qty": 12,

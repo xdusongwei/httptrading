@@ -55,16 +55,16 @@ class Contract:
     """
     Contract 定义了交易品种的精确描述.
     根据交易种类, 区分为证券和加密货币;
-    根据 ticker 设置交易标的的代码;
+    根据 symbol 设置交易标的的代码;
     对于支持多个市场的交易通道, 例如证券, 需要额外提供 region 加以区分标的的所属市场.
     """
     trade_type: TradeType
-    ticker: str
+    symbol: str
     region: str
 
     @property
     def unique_pair(self):
-        return self.trade_type, self.ticker, self.region,
+        return self.trade_type, self.symbol, self.region,
 
     def __hash__(self):
         return self.unique_pair.__hash__()
@@ -183,7 +183,7 @@ class JsonDefault:
                 'type': 'contract',
                 'tradeType': obj.trade_type.name,
                 'region': obj.region,
-                'ticker': obj.ticker,
+                'symbol': obj.symbol,
             }
         if isinstance(obj, Cash):
             return {

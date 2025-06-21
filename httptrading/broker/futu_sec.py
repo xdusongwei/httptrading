@@ -106,24 +106,24 @@ class Futu(SecuritiesBroker):
     @classmethod
     def code_to_contract(cls, code) -> Contract | None:
         region = ''
-        ticker = ''
+        symbol = ''
         if m := re.match(r'^US\.(\S+)$', code):
             region = 'US'
-            ticker = m.groups()[0]
+            symbol = m.groups()[0]
         if m := re.match(r'^HK\.(\d{5})$', code):
             region = 'HK'
-            ticker = m.groups()[0]
+            symbol = m.groups()[0]
         if m := re.match(r'^SH\.(\d{6})$', code):
             region = 'CN'
-            ticker = m.groups()[0]
+            symbol = m.groups()[0]
         if m := re.match(r'^SZ\.(\d{6})$', code):
             region = 'CN'
-            ticker = m.groups()[0]
-        if not region or not ticker:
+            symbol = m.groups()[0]
+        if not region or not symbol:
             return None
         return Contract(
             trade_type=TradeType.Securities,
-            ticker=ticker,
+            symbol=symbol,
             region=region,
         )
 
@@ -131,16 +131,16 @@ class Futu(SecuritiesBroker):
     def contract_to_code(cls, contract: Contract) -> str | None:
         if contract.trade_type != TradeType.Securities:
             return None
-        region, ticker = contract.region, contract.ticker
+        region, symbol = contract.region, contract.symbol
         code = None
-        if region == 'CN' and re.match(r'^[56]\d{5}$', ticker):
-            code = f'SH.{ticker}'
-        elif region == 'CN' and re.match(r'^[013]\d{5}$', ticker):
-            code = f'SZ.{ticker}'
-        elif region == 'HK' and re.match(r'^\d{5}$', ticker):
-            code = f'HK.{ticker}'
-        elif region == 'US' and re.match(r'^\w+$', ticker):
-            code = f'US.{ticker}'
+        if region == 'CN' and re.match(r'^[56]\d{5}$', symbol):
+            code = f'SH.{symbol}'
+        elif region == 'CN' and re.match(r'^[013]\d{5}$', symbol):
+            code = f'SZ.{symbol}'
+        elif region == 'HK' and re.match(r'^\d{5}$', symbol):
+            code = f'HK.{symbol}'
+        elif region == 'US' and re.match(r'^\w+$', symbol):
+            code = f'US.{symbol}'
         return code
 
     @classmethod

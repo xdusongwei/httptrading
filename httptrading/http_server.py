@@ -31,11 +31,11 @@ class HttpTradingView(web.View):
         params: dict = await self.request.json() if from_json else self.request.query
         trade_type = TradeType[params.get('tradeType', '--')]
         region = params.get('region', '--')
-        ticker = params.get('ticker', '--')
+        symbol = params.get('symbol', '--')
         contract = Contract(
             trade_type=trade_type,
             region=region,
-            ticker=ticker,
+            symbol=symbol,
         )
         return contract
 

@@ -62,21 +62,17 @@ class InteractiveBrokers(SecuritiesBroker):
         symbol = contract.symbol
         trade_type = TradeType.Securities
         region = ''
-        ticker = ''
         if re.match(r'^[01356]\d{5}$', symbol):
             region = 'CN'
-            ticker = symbol
         if re.match(r'^\d{5}$', symbol):
             region = 'HK'
-            ticker = symbol
         if re.match(r'^\w{1,5}$', symbol):
             region = 'US'
-            ticker = symbol
-        if not region or not ticker:
+        if not region:
             return None
         return Contract(
             trade_type=trade_type,
-            ticker=ticker,
+            symbol=symbol,
             region=region,
         )
 
@@ -86,7 +82,7 @@ class InteractiveBrokers(SecuritiesBroker):
             if contract in self._ib_contracts:
                 return self._ib_contracts[contract]
             currency = self.contract_to_currency(contract)
-            ib_contract = ib_insync.Stock(contract.ticker, 'SMART', currency=currency)
+            ib_contract = ib_insync.Stock(contract.symbol, 'SMART', currency=currency)
             client = self._client
             client.qualifyContracts(*[ib_contract, ])
             self._ib_contracts[contract] = ib_contract
