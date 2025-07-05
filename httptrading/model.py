@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 class TradeType(enum.Enum):
     Securities = enum.auto()
     Cryptocurrencies = enum.auto()
+    Indexes = enum.auto()   # 指数
+    Currencies = enum.auto()  # 货币对
+    Yields = enum.auto()  # 利率
 
 
 class Unit(enum.Enum):
